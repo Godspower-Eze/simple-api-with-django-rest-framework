@@ -1,1 +1,1 @@
-web: gunicorn bot.wsgi
+web: gunicorn simpledjangoapi.wsgi
