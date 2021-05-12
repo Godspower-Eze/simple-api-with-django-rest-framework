@@ -1,7 +1,9 @@
+import os
 from bs4 import BeautifulSoup
 import requests
 import logging
-
+from web3 import Web3
+import json
 from pathlib import Path
 
 home = Path.home()
@@ -15,6 +17,13 @@ file_handler = logging.FileHandler(home / 'contract.log')
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
+
+ETHERSCAN_KEY = os.environ.get('ETHERSCAN_KEY')
+
+
+def convert_wei_to_ether(value):
+    value = value / 1000000000000000000
+    return value
 
 
 class Scrapper:
@@ -66,5 +75,26 @@ class PriceGetter:
         self.endpoint = "https://api.coingecko.com/api/v3/simple/price"
 
     def get_price(self, id, denomination):
+        """
+        A method thats the price of a token from coingecko
+        """
+
         request = requests.get(f"{self.endpoint}?ids={id}&vs_currencies={denomination}")
         return request.content
+
+    def get_amount_of_token_in_an_address(self, address="0xb2ecd701b01fd80d38fdf88021035d22c9a370e2"):
+
+        """
+        A method that gets the amount of ether in an address
+        """
+        address_checker = Web3.isAddress(address)
+        if address_checker:
+            url = f"https://api.etherscan.io/api?module=account&action=balance&address={address}&tag=latest&apikey={ETHERSCAN_KEY}"
+            request = requests.get(url)
+            response = json.loads(request.content)
+            value_in_wei = int(response['result'])
+            value_in_ether = convert_wei_to_ether(value_in_wei)
+            return value_in_ether
+        else:
+            logger.debug("The address you passed in is not valid")
+            return False
